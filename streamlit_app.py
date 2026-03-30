@@ -34,3 +34,21 @@ rdsr, teams, tourney, seeds = get_gdp_data()
 
 This app demonstrates a machine learning model trained to predict Final Four teams using historical NCAA data.
 '''
+
+# Season Selection
+seasons = sorted(rdsr["Season"].unique())
+selected_season = st.selectbox("Select Season", seasons)
+
+# Region Selection
+
+# Model Selection
+model_choice = st.selectbox(
+    "Choose Model",
+    ["Non-PCA", "PCA", "Compare Both"]
+)
+
+season_df = rdsr[rdsr["Season"] == selected_season].copy()
+
+# Show the data for a season
+st.subheader(f"Data for {selected_season}")
+st.dataframe(season_df)
