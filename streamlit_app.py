@@ -1,19 +1,19 @@
 import streamlit as st
 import pandas as pd
-import math
-from pathlib import Path
+import joblib
+from data_manipulation import get_season_totals, create_metrics, add_seeds, add_FF, create_summary
 
 # Set the title and favicon that appear in the Browser's tab bar.
 st.set_page_config(
     page_title='March Madness Predictor',
-    page_icon='🏀', # This is an emoji shortcode. Could be a URL too.
+    page_icon='🏀',
 )
 
 # -----------------------------------------------------------------------------
 # Declare some useful functions.
 
 @st.cache_data
-def get_gdp_data():
+def load_data():
 
     rdsr = pd.read_csv("./data/MRegularSeasonDetailedResults.csv")
     teams = pd.read_csv("./data/MTeams.csv")
@@ -22,8 +22,26 @@ def get_gdp_data():
 
     return rdsr, teams, tourney, seeds
 
+@st.cache_data
+def manipulate_data():
+    season_stats = get_season_totals(rdsr)
+    team_stats = create_metrics(season_stats)
+    team_stats = add_seeds(team_stats, seeds)
+    stats_data = add_FF(team_stats, tourney)
+    return stats_data
 
-rdsr, teams, tourney, seeds = get_gdp_data()
+
+@st.cache_resource
+def load_models():
+    pca_model = joblib.load("./data/pca_pipeline.pkl")
+    no_pca_model = joblib.load("./data/non_pca_pipeline.pkl")
+    columns = joblib.load("./data/feature_columns.pkl")
+    return pca_model, no_pca_model, columns
+
+
+rdsr, teams, tourney, seeds = load_data()
+stats_data = manipulate_data()
+pca_model, no_pca_model, columns = load_models()
 
 # -----------------------------------------------------------------------------
 # Draw the actual page
@@ -36,7 +54,7 @@ This app demonstrates a machine learning model trained to predict Final Four tea
 '''
 
 # Season Selection
-seasons = sorted(rdsr["Season"].unique())
+seasons = sorted(stats_data["Season"].unique())
 selected_season = st.selectbox("Select Season", seasons)
 
 # Region Selection
@@ -47,7 +65,7 @@ model_choice = st.selectbox(
     ["Non-PCA", "PCA", "Compare Both"]
 )
 
-season_df = rdsr[rdsr["Season"] == selected_season].copy()
+season_df = stats_data[stats_data["Season"] == selected_season].copy()
 
 # Show the data for a season
 st.subheader(f"Data for {selected_season}")
