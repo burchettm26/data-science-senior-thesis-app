@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import joblib
+import plotly.express as px
 from data_manipulation import get_season_totals, create_metrics, add_seeds, add_FF, add_team_names, create_summary
 
 # Set the title and favicon that appear in the Browser's tab bar.
@@ -28,8 +29,8 @@ def manipulate_data():
     team_stats = create_metrics(season_stats)
     team_stats = add_seeds(team_stats, seeds)
     stats_data = add_FF(team_stats, tourney)
-    stats_data = add_team_names(stats_data, teams)
-    return stats_data
+    stats_data_with_names = add_team_names(stats_data, teams)
+    return stats_data, stats_data_with_names
 
 
 @st.cache_resource
@@ -41,7 +42,7 @@ def load_models():
 
 
 rdsr, teams, tourney, seeds = load_data()
-stats_data = manipulate_data()
+stats_data, stats_data_with_names = manipulate_data()
 pca_model, no_pca_model, columns = load_models()
 
 # -----------------------------------------------------------------------------
@@ -66,8 +67,50 @@ model_choice = st.selectbox(
     ["Non-PCA", "PCA", "Compare Both"]
 )
 
-season_df = stats_data[stats_data["Season"] == selected_season].copy()
+# Filter by season FIRST
+season_df = stats_data_with_names[
+    stats_data_with_names["Season"] == selected_season
+].copy()
 
-# Show the data for a season
 st.subheader(f"Data for {selected_season}")
 st.dataframe(season_df)
+
+# Map FinalFour BEFORE plotting
+season_df['FinalFour'] = season_df['FinalFour'].map({
+    0: 'Not Final Four',
+    1: 'Final Four'
+})
+
+# User selects stats
+selected_stats = st.multiselect(
+    "Select stats to compare",
+    columns,
+    default=columns[:3]
+)
+
+# Melt ONLY ONCE from the original (wide) data
+plot_df = season_df[['Team', 'FinalFour'] + selected_stats].melt(
+    id_vars=['Team', 'FinalFour'],
+    var_name='Statistic',
+    value_name='Value'
+)
+
+# Create plot
+fig = px.strip(
+    plot_df,
+    x='Statistic',
+    y='Value',
+    color='FinalFour',
+    hover_data=['Team'],
+)
+
+fig.update_layout(
+    title=f"Stat Comparison ({selected_season})",
+    xaxis_title="Statistic",
+    yaxis_title="Value"
+)
+
+fig.update_traces(jitter=0.9)
+
+# Show plot
+st.plotly_chart(fig, use_container_width=True)
