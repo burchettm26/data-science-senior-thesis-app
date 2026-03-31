@@ -75,7 +75,12 @@ season_df = stats_data_with_names[
 st.subheader(f"Data for {selected_season}")
 st.dataframe(season_df)
 
-# Map FinalFour BEFORE plotting
+'''
+Choose what statistics to compare between Final Four and non-Final Four teams. You can select as many as you like! 
+Hover over the points to see which team they represent.
+'''
+
+# Map FinalFour
 season_df['FinalFour'] = season_df['FinalFour'].map({
     0: 'Not Final Four',
     1: 'Final Four'
@@ -85,10 +90,10 @@ season_df['FinalFour'] = season_df['FinalFour'].map({
 selected_stats = st.multiselect(
     "Select stats to compare",
     columns,
-    default=columns[:3]
+    default=columns[:1]
 )
 
-# Melt ONLY ONCE from the original (wide) data
+# Melt from the original (wide) data
 plot_df = season_df[['Team', 'FinalFour'] + selected_stats].melt(
     id_vars=['Team', 'FinalFour'],
     var_name='Statistic',
