@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import joblib
-from data_manipulation import get_season_totals, create_metrics, add_seeds, add_FF, create_summary
+from data_manipulation import get_season_totals, create_metrics, add_seeds, add_FF, add_team_names, create_summary
 
 # Set the title and favicon that appear in the Browser's tab bar.
 st.set_page_config(
@@ -28,6 +28,7 @@ def manipulate_data():
     team_stats = create_metrics(season_stats)
     team_stats = add_seeds(team_stats, seeds)
     stats_data = add_FF(team_stats, tourney)
+    stats_data = add_team_names(stats_data, teams)
     return stats_data
 
 
