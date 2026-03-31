@@ -182,11 +182,23 @@ def add_FF(team_stats, tourney):
 
     return stats_data
 
+def add_team_names(stats_data, teams):
+    stats_data = stats_data.merge(
+        teams[["TeamID","TeamName"]],
+        on="TeamID",
+        how="left"
+    )
+
+    stats_data.rename(columns={"TeamName":"Team"}, inplace=True)
+    stats_data.drop(columns=["TeamID"], inplace=True)
+
+    return stats_data
+
 def create_summary(stats_data, probs, teams, seeds, y, X):
     results = stats_data.loc[X.index, ['Season', 'TeamID', "Seed"]].copy()
     results['Prediction'] = probs
     results['Actual'] = y.values
     results = results.merge(teams[['TeamID','TeamName']], on='TeamID', how='left')
-    results = results.merge(seeds[['Season', 'TeamID', 'Region']], on=['Season', 'TeamID'], how='left')
-    results = results[['Season','TeamName','TeamID', 'Seed', 'Region', 'Prediction','Actual']]
+    results = results.merge(seeds[['Season', 'TeamID']], on=['Season', 'TeamID'], how='left')
+    results = results[['Season','TeamName','TeamID', 'Seed', 'Prediction','Actual']]
     return results
