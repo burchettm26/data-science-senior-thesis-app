@@ -61,11 +61,6 @@ selected_season = st.selectbox("Select Season", seasons)
 
 # Region Selection
 
-# Model Selection
-model_choice = st.selectbox(
-    "Choose Model",
-    ["Non-PCA", "PCA", "Compare Both"]
-)
 
 # Filter by season FIRST
 season_df = stats_data_with_names[
@@ -139,3 +134,32 @@ fig.add_hline(y=50, line_dash="dash")
 
 # Show plot
 st.plotly_chart(fig, width='stretch')
+
+# Model Selection
+model_choice = st.selectbox(
+    "Choose Model",
+    ["Non-PCA", "PCA", "Compare Both"]
+)
+
+features = season_df.drop(columns=["FinalFour", "Season", "Team"])
+
+if model_choice == "Non-PCA":
+    season_df["Probability"] = no_pca_model.predict_proba(features)[:, 1]
+
+elif model_choice == "PCA":
+    season_df["Probability"] = pca_model.predict_proba(features)[:, 1]
+
+else:
+    season_df["Non-PCA Prob"] = no_pca_model.predict_proba(features)[:, 1]
+    season_df["PCA Prob"] = pca_model.predict_proba(features)[:, 1]
+
+st.subheader("Predictions")
+
+if model_choice == "Compare Both":
+    st.dataframe(
+        season_df.sort_values("Non-PCA Prob", ascending=False)
+    )
+else:
+    st.dataframe(
+        season_df.sort_values("Probability", ascending=False)
+    )
