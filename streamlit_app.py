@@ -93,29 +93,49 @@ selected_stats = st.multiselect(
     default=columns[:1]
 )
 
+percentile_df = season_df.copy()
+
+for col in selected_stats:
+    percentile_df[col + "_pct"] = percentile_df[col].rank(pct=True) * 100
+
+lower_is_better = ['DefRtg', 'OPPG', 'TORate']
+
+for col in lower_is_better:
+    if col in selected_stats:
+        percentile_df[col + "_pct"] = 100 - percentile_df[col + "_pct"]
+
 # Melt from the original (wide) data
-plot_df = season_df[['Team', 'FinalFour'] + selected_stats].melt(
-    id_vars=['Team', 'FinalFour'],
-    var_name='Statistic',
-    value_name='Value'
-)
+plot_df = pd.DataFrame()
+
+for col in selected_stats:
+    temp = percentile_df[['Team', 'FinalFour']].copy()
+    temp['Statistic'] = col
+    temp['Percentile'] = percentile_df[col + "_pct"]
+    temp['ActualValue'] = percentile_df[col]
+    
+    plot_df = pd.concat([plot_df, temp], ignore_index=True)
 
 # Create plot
 fig = px.strip(
     plot_df,
     x='Statistic',
-    y='Value',
+    y='Percentile',
     color='FinalFour',
-    hover_data=['Team'],
+    hover_data={
+        'Team': True,
+        'ActualValue': ':.3f',
+        'Percentile': ':.1f'
+    }
 )
 
 fig.update_layout(
     title=f"Stat Comparison ({selected_season})",
     xaxis_title="Statistic",
-    yaxis_title="Value"
+    yaxis_title="Percentile"
 )
 
 fig.update_traces(jitter=0.9)
+fig.add_hline(y=50, line_dash="dash")
 
 # Show plot
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, width='stretch')
