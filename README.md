@@ -1,6 +1,6 @@
-# :earth_americas: GDP dashboard template
+# 🏀 March Madness Final Four Predictor
 
-A simple Streamlit app showing the GDP of different countries in the world.
+A simple Streamlit app demonstrating a machine learning model trained to predict Final Four teams using historical NCAA data.
 
 [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://gdp-dashboard-template.streamlit.app/)
 
