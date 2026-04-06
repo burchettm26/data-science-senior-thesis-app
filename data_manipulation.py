@@ -163,7 +163,11 @@ def add_seeds(team_stats, seeds):
     return team_stats
 
 def add_FF(team_stats, tourney):
-    elite8 = tourney[(tourney["DayNum"] >= 145) & (tourney["DayNum"] <= 146)]
+    tourney_sorted = tourney.sort_values(["Season", "DayNum"])
+
+    last_games = tourney_sorted.groupby("Season").tail(7)
+
+    elite8 = last_games.groupby("Season").head(4)
     final_four_teams = elite8[["Season","WTeamID"]].rename(
         columns={"WTeamID":"TeamID"}
     )
