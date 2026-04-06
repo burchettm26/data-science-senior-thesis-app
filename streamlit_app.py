@@ -111,7 +111,7 @@ for col in selected_stats:
     plot_df = pd.concat([plot_df, temp], ignore_index=True)
 
 # Create plot
-fig = px.strip(
+stat_fig = px.strip(
     plot_df,
     x='Statistic',
     y='Percentile',
@@ -123,17 +123,17 @@ fig = px.strip(
     }
 )
 
-fig.update_layout(
+stat_fig.update_layout(
     title=f"Stat Comparison ({selected_season})",
     xaxis_title="Statistic",
     yaxis_title="Percentile"
 )
 
-fig.update_traces(jitter=0.9)
-fig.add_hline(y=50, line_dash="dash")
+stat_fig.update_traces(jitter=0.9)
+stat_fig.add_hline(y=50, line_dash="dash")
 
 # Show plot
-st.plotly_chart(fig, width='stretch')
+st.plotly_chart(stat_fig, width='stretch')
 
 # Model Selection
 model_choice = st.selectbox(
@@ -163,3 +163,17 @@ else:
     st.dataframe(
         season_df.sort_values("Probability", ascending=False)
     )
+
+st.subheader("Final Four Predictions")
+
+season_df = season_df.sort_values(by="Probability", ascending=True)
+
+pred_fig = px.scatter(
+    season_df,
+    x='Probability',
+    y='Team',
+    color='Probability',
+    hover_data=['Seed', 'FinalFour']
+)
+
+st.plotly_chart(pred_fig, use_container_width=True)
