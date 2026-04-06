@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 import plotly.express as px
+import plotly.graph_objects as go
 from data_manipulation import get_season_totals, create_metrics, add_seeds, add_FF, add_team_names, create_summary
 
 # Set the title and favicon that appear in the Browser's tab bar.
@@ -71,8 +72,7 @@ st.subheader(f"Data for {selected_season}")
 st.dataframe(season_df)
 
 '''
-Choose what statistics to compare between Final Four and non-Final Four teams. You can select as many as you like! 
-Hover over the points to see which team they represent.
+Choose what statistics to compare between the average of the Final Four teams and any other teams. You can select as many as you like! 
 '''
 
 # Map FinalFour
@@ -81,17 +81,28 @@ season_df['FinalFour'] = season_df['FinalFour'].map({
     1: 'Final Four'
 })
 
-# User selects stats
+# User selects stats to compare
 selected_stats = st.multiselect(
     "Select stats to compare",
     columns,
     default=columns[:1]
 )
 
+# select a team for the radar chart
+selected_team = st.selectbox(
+    "Select a team",
+    season_df["Team"].unique()
+)
+
 percentile_df = season_df.copy()
 
 for col in selected_stats:
-    percentile_df[col + "_pct"] = percentile_df[col].rank(pct=True) * 100
+    min_val = season_df[col].min()
+    max_val = season_df[col].max()
+    
+    percentile_df[col + "_pct"] = (
+        (season_df[col] - min_val) / (max_val - min_val)
+    ) * 100
 
 lower_is_better = ['DefRtg', 'OPPG', 'TORate']
 
@@ -99,41 +110,62 @@ for col in lower_is_better:
     if col in selected_stats:
         percentile_df[col + "_pct"] = 100 - percentile_df[col + "_pct"]
 
-# Melt from the original (wide) data
-plot_df = pd.DataFrame()
+team_row = percentile_df[percentile_df["Team"] == selected_team].iloc[0]
 
-for col in selected_stats:
-    temp = percentile_df[['Team', 'FinalFour']].copy()
-    temp['Statistic'] = col
-    temp['Percentile'] = percentile_df[col + "_pct"]
-    temp['ActualValue'] = percentile_df[col]
-    
-    plot_df = pd.concat([plot_df, temp], ignore_index=True)
+categories = selected_stats
 
-# Create plot
-stat_fig = px.strip(
-    plot_df,
-    x='Statistic',
-    y='Percentile',
-    color='FinalFour',
-    hover_data={
-        'Team': True,
-        'ActualValue': ':.3f',
-        'Percentile': ':.1f'
-    }
+team_percentiles = [team_row[col + "_pct"] for col in selected_stats]
+team_raw = [team_row[col] for col in selected_stats]
+
+# Average Final Four team
+ff_df = percentile_df[percentile_df["FinalFour"] == "Final Four"]
+
+avg_percentiles = [
+    ff_df[col + "_pct"].mean() for col in selected_stats
+]
+
+# Used to connect the lines in the radar chart around whatever stats the user selects. 
+# We repeat the first stat at the end to close the loop.
+categories = selected_stats + [selected_stats[0]]
+team_percentiles += [team_percentiles[0]]
+avg_percentiles += [avg_percentiles[0]]
+
+fig = go.Figure()
+
+# Team trace
+fig.add_trace(go.Scatterpolar(
+    r=team_percentiles,
+    theta=categories,
+    fill='toself',
+    name=selected_team,
+    hovertext=[
+        f"{cat}<br>Percentile: {pct:.1f}<br>Value: {raw:.3f}"
+        for cat, pct, raw in zip(categories, team_percentiles, team_raw)
+    ],
+    hoverinfo="text"
+))
+
+# Final Four average trace
+fig.add_trace(go.Scatterpolar(
+    r=avg_percentiles,
+    theta=categories,
+    fill='toself',
+    name='Avg Final Four',
+    line=dict(dash='dash')
+))
+
+fig.update_layout(
+    title=f"{selected_team} Profile vs Final Four Teams ({selected_season})",
+    polar=dict(
+        radialaxis=dict(
+            visible=True,
+            range=[0, 100]
+        )
+    ),
+    showlegend=True
 )
 
-stat_fig.update_layout(
-    title=f"Stat Comparison ({selected_season})",
-    xaxis_title="Statistic",
-    yaxis_title="Percentile"
-)
-
-stat_fig.update_traces(jitter=0.9)
-stat_fig.add_hline(y=50, line_dash="dash")
-
-# Show plot
-st.plotly_chart(stat_fig, width='stretch')
+st.plotly_chart(fig, use_container_width=True)
 
 # Model Selection
 model_choice = st.selectbox(
