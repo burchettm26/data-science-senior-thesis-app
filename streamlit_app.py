@@ -85,7 +85,7 @@ season_df['FinalFour'] = season_df['FinalFour'].map({
 selected_stats = st.multiselect(
     "Select stats to compare",
     columns,
-    default=columns[:1]
+    default=columns[:5]
 )
 
 # select a team for the radar chart
@@ -188,23 +188,25 @@ else:
 st.subheader("Predictions")
 
 if model_choice == "Compare Both":
+    season_df = season_df.sort_values(by="Non-PCA Prob", ascending=True)
+    x = "Non-PCA Prob"
     st.dataframe(
-        season_df.sort_values("Non-PCA Prob", ascending=False)
+        season_df[["Season", "Team", "Seed", "FinalFour", "Non-PCA Prob", "PCA Prob"]].sort_values("Non-PCA Prob", ascending=False)
     )
 else:
+    x = "Probability"
+    season_df = season_df.sort_values(by="Probability", ascending=True)
     st.dataframe(
-        season_df.sort_values("Probability", ascending=False)
+        season_df[["Season", "Team", "Seed", "FinalFour", "Probability"]].sort_values("Probability", ascending=False)
     )
 
 st.subheader("Final Four Predictions")
 
-season_df = season_df.sort_values(by="Probability", ascending=True)
-
 pred_fig = px.scatter(
     season_df,
-    x='Probability',
+    x=x,
     y='Team',
-    color='Probability',
+    color=x,
     hover_data=['Seed', 'FinalFour']
 )
 
