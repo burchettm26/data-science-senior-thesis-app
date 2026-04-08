@@ -151,9 +151,12 @@ def create_metrics(season_stats):
 
     return team_stats
 
-def add_seeds(team_stats, seeds):
+def add_seed_and_region(team_stats, seeds):
+
+    seeds['Region'] = seeds['Seed'].str[0:1].astype(str)
+
     team_stats = team_stats.merge(
-        seeds[["Season","TeamID","Seed"]],
+        seeds[["Season","TeamID","Seed","Region"]],
         on=["Season","TeamID"],
         how="inner"
     )
@@ -197,12 +200,3 @@ def add_team_names(stats_data, teams):
     stats_data.drop(columns=["TeamID"], inplace=True)
 
     return stats_data
-
-def create_summary(stats_data, probs, teams, seeds, y, X):
-    results = stats_data.loc[X.index, ['Season', 'TeamID', "Seed"]].copy()
-    results['Prediction'] = probs
-    results['Actual'] = y.values
-    results = results.merge(teams[['TeamID','TeamName']], on='TeamID', how='left')
-    results = results.merge(seeds[['Season', 'TeamID']], on=['Season', 'TeamID'], how='left')
-    results = results[['Season','TeamName','TeamID', 'Seed', 'Prediction','Actual']]
-    return results
