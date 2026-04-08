@@ -3,7 +3,7 @@ import pandas as pd
 import joblib
 import plotly.express as px
 import plotly.graph_objects as go
-from data_manipulation import get_season_totals, create_metrics, add_seeds, add_FF, add_team_names, create_summary
+from data_manipulation import get_season_totals, create_metrics, add_seed_and_region, add_FF, add_team_names
 
 # Set the title and favicon that appear in the Browser's tab bar.
 st.set_page_config(
@@ -28,7 +28,7 @@ def load_data():
 def manipulate_data():
     season_stats = get_season_totals(rdsr)
     team_stats = create_metrics(season_stats)
-    team_stats = add_seeds(team_stats, seeds)
+    team_stats = add_seed_and_region(team_stats, seeds)
     stats_data = add_FF(team_stats, tourney)
     stats_data_with_names = add_team_names(stats_data, teams)
     return stats_data, stats_data_with_names
@@ -173,7 +173,7 @@ model_choice = st.selectbox(
     ["Non-PCA", "PCA", "Compare Both"]
 )
 
-features = season_df.drop(columns=["FinalFour", "Season", "Team"])
+features = season_df.drop(columns=["FinalFour", "Season", "Team", "Region"])
 
 if model_choice == "Non-PCA":
     season_df["Probability"] = no_pca_model.predict_proba(features)[:, 1]
@@ -191,23 +191,32 @@ if model_choice == "Compare Both":
     season_df = season_df.sort_values(by="Non-PCA Prob", ascending=True)
     x = "Non-PCA Prob"
     st.dataframe(
-        season_df[["Season", "Team", "Seed", "FinalFour", "Non-PCA Prob", "PCA Prob"]].sort_values("Non-PCA Prob", ascending=False)
+        season_df[["Season", "Team", "Seed", "Region", "FinalFour", "Non-PCA Prob", "PCA Prob"]].sort_values("Non-PCA Prob", ascending=False)
     )
 else:
     x = "Probability"
     season_df = season_df.sort_values(by="Probability", ascending=True)
     st.dataframe(
-        season_df[["Season", "Team", "Seed", "FinalFour", "Probability"]].sort_values("Probability", ascending=False)
+        season_df[["Season", "Team", "Seed", "Region", "FinalFour", "Probability"]].sort_values("Probability", ascending=False)
     )
 
 st.subheader("Final Four Predictions")
+
+color_map = {
+    "W": "blue",
+    "X": "red",
+    "Y": "green",
+    "Z": "orange"
+}
 
 pred_fig = px.scatter(
     season_df,
     x=x,
     y='Team',
-    color=x,
-    hover_data=['Seed', 'FinalFour']
+    color="Region",
+    hover_data=['Seed', 'FinalFour'],
+    category_orders={"Team": season_df["Team"].tolist()},
+    color_discrete_map=color_map
 )
 
-st.plotly_chart(pred_fig, use_container_width=True)
+st.container(height=600).plotly_chart(pred_fig, width='stretch', height=1200)
