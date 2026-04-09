@@ -202,6 +202,16 @@ else:
 
 st.subheader("Final Four Predictions")
 
+regions = ["All"] + sorted(season_df["Region"].unique())
+
+selected_regions = st.multiselect(
+    "Select Region(s)",
+    options=sorted(season_df["Region"].unique()),
+    default=sorted(season_df["Region"].unique())
+)
+
+filtered_df = season_df[season_df["Region"].isin(selected_regions)]
+
 color_map = {
     "W": "blue",
     "X": "red",
@@ -210,13 +220,17 @@ color_map = {
 }
 
 pred_fig = px.scatter(
-    season_df,
+    filtered_df,
     x=x,
     y='Team',
     color="Region",
     hover_data=['Seed', 'FinalFour'],
-    category_orders={"Team": season_df["Team"].tolist()},
+    category_orders={"Team": filtered_df["Team"].tolist()},
     color_discrete_map=color_map
 )
 
-st.container(height=600).plotly_chart(pred_fig, width='stretch', height=1200)
+height = max(1, 25 * len(filtered_df))
+
+container_height = min(height, 600)
+
+st.container(height=container_height).plotly_chart(pred_fig, width='stretch', height=height)
