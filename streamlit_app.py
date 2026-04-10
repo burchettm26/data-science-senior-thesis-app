@@ -63,16 +63,14 @@ Choose any season from 2003 to 2025 to explore the data and predictions!
 seasons = sorted(stats_data["Season"].unique())
 selected_season = st.selectbox("Select Season", seasons)
 
-# Region Selection
-
-
 # Filter by season FIRST
 season_df = stats_data_with_names[
     stats_data_with_names["Season"] == selected_season
 ].copy()
 
 st.subheader(f"Data for {selected_season}")
-st.dataframe(season_df)
+stats_df = season_df[["Team", "Seed", "Region"] + columns]
+st.dataframe(stats_df)
 
 '''
 Choose what statistics to compare between the average of the Final Four teams and any other teams. You can select as many as you like! 
