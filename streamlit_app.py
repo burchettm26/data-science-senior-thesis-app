@@ -56,6 +56,9 @@ pca_model, no_pca_model, columns = load_models()
 This app demonstrates a machine learning model trained to predict Final Four teams using historical NCAA data.
 '''
 
+'''
+Choose any season from 2003 to 2025 to explore the data and predictions!
+'''
 # Season Selection
 seasons = sorted(stats_data["Season"].unique())
 selected_season = st.selectbox("Select Season", seasons)
@@ -87,6 +90,13 @@ selected_stats = st.multiselect(
     columns,
     default=columns[:5]
 )
+
+'''
+Now, choose a team to compare against the average Final Four team. 
+The radar chart will show how that team ranks in the selected stats compared to 
+the average of the Final Four teams from that season. Hover over each point to 
+see the exact percentile and raw value for that stat!
+'''
 
 # select a team for the radar chart
 selected_team = st.selectbox(
@@ -167,6 +177,11 @@ fig.update_layout(
 
 st.plotly_chart(fig, width='stretch')
 
+'''
+Next, choose which model you want to use to predict the probabilities of each team making the Final Four.
+You can view your selection in a table below or in the predictions plot at the bottom of the page!
+'''
+
 # Model Selection
 model_choice = st.selectbox(
     "Choose Model",
@@ -200,7 +215,11 @@ else:
         season_df[["Season", "Team", "Seed", "Region", "FinalFour", "Probability"]].sort_values("Probability", ascending=False)
     )
 
-st.subheader("Final Four Predictions")
+st.subheader("Final Four Predictions Plot")
+
+'''
+Now, you can choose to filter the predictions plot by region. This will show you how the model ranks teams from different regions against each other.
+'''
 
 regions = ["All"] + sorted(season_df["Region"].unique())
 
@@ -219,17 +238,53 @@ color_map = {
     "Z": "orange"
 }
 
-pred_fig = px.scatter(
-    filtered_df,
-    x=x,
-    y='Team',
-    color="Region",
-    hover_data=['Seed', 'FinalFour'],
-    category_orders={"Team": filtered_df["Team"].tolist()},
-    color_discrete_map=color_map
-)
+if model_choice == "Compare Both":
+    
+    # Reshape data
+    df_long = filtered_df.melt(
+        id_vars=["Team", "Region", "Seed", "FinalFour"],
+        value_vars=["Non-PCA Prob", "PCA Prob"],
+        var_name="Model",
+        value_name="Probability"
+    )
 
-height = max(1, 25 * len(filtered_df))
+    # Clean model names
+    df_long["Model"] = df_long["Model"].map({
+        "Non-PCA Prob": "Non-PCA Model",
+        "PCA Prob": "PCA Model"
+    })
+
+    # Sort
+    df_sorted = df_long.sort_values("Probability", ascending=True)
+
+    pred_fig = px.scatter(
+        df_sorted,
+        x="Probability",
+        y="Team",
+        color="Region",
+        symbol="Model",
+        hover_data=["Seed", "FinalFour", "Model"],
+        category_orders={"Team": df_sorted["Team"].unique()},
+        color_discrete_map=color_map
+    )
+
+    height = max(1, 25 * df_sorted["Team"].nunique())
+
+else:
+    # Single model behavior (same as before)
+    df_sorted = filtered_df.sort_values("Probability", ascending=True)
+
+    pred_fig = px.scatter(
+        df_sorted,
+        x="Probability",
+        y="Team",
+        color="Region",
+        hover_data=["Seed", "FinalFour"],
+        category_orders={"Team": df_sorted["Team"].tolist()},
+        color_discrete_map=color_map
+    )
+
+    height = max(1, 25 * len(df_sorted))
 
 container_height = min(height, 600)
 
