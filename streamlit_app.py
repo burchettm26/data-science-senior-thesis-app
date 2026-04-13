@@ -69,7 +69,7 @@ season_df = stats_data_with_names[
 ].copy()
 
 st.subheader(f"Data for {selected_season}")
-stats_df = season_df[["Team", "Seed", "Region"] + columns]
+stats_df = season_df[["Team", "Region"] + columns]
 st.dataframe(stats_df)
 
 '''

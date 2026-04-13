@@ -183,9 +183,21 @@ def add_FF(team_stats, tourney):
         how="left"
     )
 
-    stats_data = stats_data[stats_data["Season"] != 2026]
-
     stats_data["FinalFour"] = stats_data["FinalFour"].fillna(0)
+
+    final_four_2026 = [
+        # put actual TeamIDs here
+        1276,
+        1112,
+        1163,
+        1228
+    ]
+
+    stats_data.loc[
+        (stats_data["Season"] == 2026) &
+        (stats_data["TeamID"].isin(final_four_2026)),
+        "FinalFour"
+    ] = 1
 
     return stats_data
 
